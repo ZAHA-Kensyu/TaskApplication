@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Main</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+    <h1>main</h1>
+    <button type="button" onclick="addList()">リスト作成</button>
+    <!-- 1つ作成 -->
+    <div class="board">
+    </div>
+
+
+    <!-- ondragstart="dragStart(event)"> -->
+    <script>
+        //ドラッグ＆ドロップの処理-------------------------------------------------------------------------------
+        let dragged;
+        document.addEventListener("dragstart", function (event) {
+            const target = event.target.closest(".task");
+            console.log(target);
+            console.log('ドラッグ処理');
+            if (target) {
+                event.dataTransfer.setData("text/html", target.outerHTML);
+                dragged = target;
+            }
+        }, false);
+
+        var dropTargets = document.getElementsByClassName("list"); // ドロップ可能な要素のクラス名を指定
+
+        document.addEventListener("dragover", function (event) {
+
+            // prevent default to allow drop
+            event.preventDefault();
+            var isDropTarget = Array.from(dropTargets).some(function (target) {
+                return target === event.target;
+            });
+
+            if (isDropTarget) {
+                // Do something with the drop target element
+                console.log("Element being dragged over:", event.target);
+            }
+
+        }, false);
+
+        document.addEventListener("drop", function (event) {
+            event.preventDefault();
+
+            //親のリスト番号を取得する
+            const listId = event.target.getAttribute('data-value');
+            const draggedElement = document.querySelector('.task');
+            const id = draggedElement.getAttribute('data-value');
+            console.log('ドラッグされたアイテム',);
+            console.log(listId);
+            //ここがおかしい
+            TaskListIdUpdate(id, listId);
+
+
+            dragged.parentNode.removeChild(dragged);//自分の親要素から自分を削除する。
+            event.target.appendChild(dragged)
+        }, false);
+
+        //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+        //データベースからリストを取得
+        getListData();
+
+        function getListData() {
+            fetch('/getListData', {
+                method: 'GET',
+            }).then(response => {
+                if (response.ok) {
+                    console.log('リクエストが成功しました');
+                    response.json().then(data => {
+                        console.log(data);
+                        listView(data);
+                    });
+                } else {
+                    console.log('リクエストが失敗しました');
+                }
+            });
+        }
+
+        function createList() {
+
+
+        }
+
+        //リスト
+        function listView(listData) {
+            //board内の要素を初期化
+            var board = document.querySelector('.board');
+            board.innerHTML = '';
+
+            //リスト作成
+            for (let i = 0; i < listData.length; i++) {
+                var newList = document.createElement('div');//リスト作成
+                newList.className = 'list';
+                newList.setAttribute('data-value', listData[i].id);
+                //var  = document.createElement('input');//入力を作成
+                const newInput = InputCreate('list_name_input');
+                newInput.value = listData[i].name;
+                newInput.disabled = true;
+                newList.appendChild(newInput);
+                newList.appendChild(ButtonCreate('button', 'taskButton', 'タスクを追加'));
+                board.appendChild(newList);
+            }
+
+            //ボタン
+            var createTaskButtons = document.getElementsByClassName("taskButton");
+            for (var i = 0; i < createTaskButtons.length; i++) {
+                createTaskButtons[i].addEventListener("click", function () {
+                    const taskbutton = this;
+                    const parentList = taskbutton.parentNode;
+                    //console.log(parentList);
+                    CreateTask(parentList);
+                });
+            }
+            getTaskData();
+        }
+
+
+        function getTaskData() {
+            fetch('/getTaskData', {
+                method: 'GET',
+            }).then(response => {
+                if (response.ok) {
+                    console.log('リクエストが成功しました');
+                    response.json().then(data => {
+                        taskView(data);
+                    });
+                } else {
+                    console.log('リクエストが失敗しました');
+                }
+            });
+        }
+
+
+
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        //リスト表示
+        //ここまでリストIDとListを取得したい。
+        function taskView(tasks) {
+            //const lists = document.getElementsByClassName("list");
+            console.log(tasks);
+            for (let i = 0; i < tasks.length; i++) {
+                var list = document.querySelector('[data-value="' + tasks[i].listId + '"]');
+                const newTask = document.createElement('div'); //divで作成
+                newTask.className = 'task'; //クラスの名前
+                newTask.draggable = 'true'; //ドラッグドロップにできるやつ
+                newTask.setAttribute('data-value', tasks[i].id); // カスタムデータ属性を追加
+                list.appendChild(newTask);//リストの中にタスクを作成
+                const input = InputCreate('test');
+                input.disabled = true; //テキスト無効
+                newTask.appendChild(input);
+                const addtaskBtn = ButtonCreate('button', 'addTaskButton', '登録');
+                const edittaskBtn = ButtonCreate('button', 'editTtaskButton', '編集');
+                input.value = tasks[i].name;
+                if (tasks[i].isAdd) {
+                    addtaskBtn.disabled = true;
+                }
+                newTask.appendChild(addtaskBtn);
+                newTask.appendChild(edittaskBtn);
+            }
+
+            var editTaskButtons = document.getElementsByClassName("editTtaskButton");
+            console.log('編集ボタン数', editTaskButtons.length);
+            for (var i = 0; i < editTaskButtons.length; i++) {
+                editTaskButtons[i].addEventListener("click", function (event) {
+                    const task = event.target.closest(".task");
+                    const taskId = task.getAttribute('data-value');
+                    console.log('task', taskId);
+                    window.location.href = "task/" + taskId;
+                    // getTaskById(taskId);
+                });
+            }
+        }
+
+
+        // function getTaskById(taskId) {
+        //     fetch(`/getTask/${taskId}`, {
+        //         method: 'GET',
+        //     }).then(response => {
+        //         if (response.ok) {
+        //             console.log('リクエストが成功しました');
+        //             response.json().then(data => {
+        //                 console.log(data);
+        //                 fetch(`/task`, {
+        //                     method: 'POST',
+        //                     headers: {
+        //                         'Content-Type': 'application/json'
+        //                     },
+        //                     body: JSON.stringify(data)
+        //                 }).then(response => {
+        //                     if (response.ok) {
+        //                         console.log('リクエストが成功');
+        //                         window.
+        //                     } else {
+        //                         console.log('リクエストが失敗しました');
+        //                     }
+        //                 });
+        //             });
+        //         } else {
+        //             console.log('リクエストが失敗しました');
+        //         }
+        //     });
+        // }
+
+        //
+        // タスクを行う処理
+        //
+
+
+        //リスト作成
+        //boardの入れ子にするリストを
+
+        function addList() {
+            //board要素取得
+            var board = document.querySelector('.board');
+
+            //タグ作成
+            var newList = document.createElement('div');
+            newList.className = 'list';
+
+            newList.appendChild(InputCreate());
+            board.appendChild(newList);
+
+            //リストのデータをDBに登録
+            FormListDataInsert(newList);
+        }
+
+
+        //タスクを作成
+        function CreateTask(list) {
+            const newTask = document.createElement('div');
+            newTask.className = 'task';
+            newTask.draggable = 'true';
+            list.appendChild(newTask);
+            newTask.appendChild(InputCreate('test'));
+            const addtaskBtn = ButtonCreate('button', 'addTaskButton', '登録');
+            const edittaskBtn = ButtonCreate('button', 'editTtaskButton', '編集');
+            newTask.appendChild(addtaskBtn);
+            newTask.appendChild(edittaskBtn);
+
+            var addTaskButtons = document.getElementsByClassName("addTaskButton");
+
+            console.log('登録ボタン押された' + addTaskButtons.length);
+            for (var i = 0; i < addTaskButtons.length; i++) {
+                addTaskButtons[i].addEventListener("click", function () {
+                    const taskbutton = this;
+                    taskbutton.disabled = true;
+                    const parentTask = taskbutton.parentNode;
+                    const parentList = parentTask.parentNode;
+                    const inputTask = parentTask.querySelector("input");
+                    inputTask.disabled = true;
+                    const listId = parentList.getAttribute('data-value');
+                    FormTaskDataInsert(inputTask, listId, true);
+                });
+            }
+        }
+
+
+
+
+
+        //送信系と作成系の処理--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        function CreateForm(faction, fmethod) {
+            const form = document.createElement('form');
+            form.action = faction;
+            form.method = fmethod;
+            return form;
+        }
+
+        function InputCreate(className) {
+            var newInput = document.createElement('input');
+            newInput.type = 'text';
+            newInput.className = className;
+            return newInput;
+        }
+
+        function ButtonCreate(btype, bclassName, btextContent) {
+            var newButton = document.createElement('button');
+            newButton.type = btype;
+            'button';
+            newButton.className = bclassName;
+            'taskButton';
+            newButton.textContent = btextContent;
+            'タスクを追加';
+            return newButton;
+        }
+
+
+        function TaskListIdUpdate(id, listId) {
+            const formData = new FormData();
+            const taskId = parseInt(id);
+            const taskListId = parseInt(listId);
+            formData.append('id', taskId);
+            formData.append('listId', listId);
+
+            fetch('/taskListIdUpdate', {
+                method: 'PUT',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    console.log('リクエストが成功しました');
+                } else {
+                    console.log('リクエストが失敗しました');
+                }
+            })
+        }
+
+        function FormTaskDataInsert(inputElement, listIdData, isAdd) {
+            const formData = new FormData();
+            formData.append('name', inputElement.value);
+            const listId = parseInt(listIdData);
+            formData.append('listId', listId);
+            formData.append('isAdd', isAdd);
+            fetch('/postInitTaskData', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    console.log('リクエストが成功しました');
+                } else {
+                    console.log('リクエストが失敗しました');
+                }
+            })
+        }
+
+        function FormListDataInsert(inputElement) {
+            const formData = new FormData();
+            formData.append('name', inputElement.value);
+
+            fetch('/postListData', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    console.log('リクエストが成功しました');
+                } else {
+                    console.log('リクエストが失敗しました');
+                }
+            })
+        }
+
+        //----------------タイマーと通知の処理
+        //データベースから取得する。
+        //時間と日付を取る
+
+        fetch('/getTaskData', {
+            method: 'GET',
+        }).then(response => {
+            if (response.ok) {
+                response.json().then(taskData => {
+                    console.log('リクエストが成功しました');
+                    Timer(taskData);
+                });
+            } else {
+                console.log('リクエストが失敗しました');
+            }
+        });
+
+        function Timer(taskData) {
+            // console.log('taskTimer');
+
+            // for (let i = 0; i < 5; i++) {
+            //     (function (i){
+            //         if (i == 2) {
+            //             break;
+
+            //         }
+            //     })(i);
+
+            // }
+
+            //データベースに通知の登録を行う。
+            for (let i = 0; i < taskData.length; i++) {
+                (function (i) {
+                    var dateTimeString = taskData[i].deadlineDate + 'T' + taskData[i].deadlineTime;
+                    var targetTime = new Date(dateTimeString);
+
+                    var checkDeadline = function () {
+                        var currentTime = new Date();
+                        if (currentTime >= targetTime) {
+                            // 目標時間に達した場合の処理を記述
+                            showNotification(taskData[i].name, taskData[i].url);
+
+                        } else {
+                            // 目標時間に達していない場合は再度チェックする
+                            setTimeout(checkDeadline, 1000);
+                        }
+                    };
+
+                    // 初回のチェックを実行する
+                    checkDeadline();
+                })(i);
+            }
+            //タスクネームを取得
+        }
+
+        function showNotification(taskName, linkUrl) {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === 'granted') {
+                        var options = {
+                            body: '通知の本文',
+                            icon: 'images/small.png',
+                            data: {
+                                url: linkUrl
+                            }
+                        };
+                        var notification = new Notification(taskName, options);
+                        notification.onclick = function (event) {
+                            event.preventDefault();
+                            window.open(notification.data.url, '_blank');
+                        };
+                    }
+                });
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>
