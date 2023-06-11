@@ -27,16 +27,6 @@ public class TaskController {
         return "redirect:/login";
     }
 
-    @GetMapping("/login")
-    String getLogin(){
-        return "login";
-    }
-
-    @PostMapping("/login")
-    String postLogin(@ModelAttribute LoginForm loginForm){
-        return "redirect:/main";
-    }
-
     @GetMapping("/main")
     String getMain(){
         return "/main";
@@ -46,10 +36,6 @@ public class TaskController {
     String getTask(@PathVariable int id, Model model){
         System.out.println("テスト");
         var taskData = taskService.findById(id);
-//        System.out.println("id"+id);
-//        System.out.println(taskData.getId());
-//        System.out.println(taskData.getName());
-//        System.out.println(taskData.getMemo());
         model.addAttribute("taskData",taskData);
         model.addAttribute("id",id);
         return "task";

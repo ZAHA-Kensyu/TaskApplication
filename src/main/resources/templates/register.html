@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
-    <link rel="stylesheet" href="/css/login.css">
+    <link rel="stylesheet" href="/css/register.css">
 </head>
 
 <body>
-    <h1>ログイン</h1>
-    <th:block th:if="${loginError}" th:text="${loginError}"></th:block>
+    <h1>新規登録</h1>
+
+    <th:block th:if="${userIdError}" th:text="${userIdError}"></th:block>
     <div class="form">
-        <form action="/login" method="POST" th:object="${loginForm}">
+        <form action="/register" method="POST" th:object="${registerForm}">
             <div class=input-field>
                 <input type="text" name="userId" placeholder="ユーザーIDを入力してください。" th:field="*{userId}">
                 <th:block th:each="error: ${#fields.errors('userId')}">[[ ${error} ]]</th:block>
@@ -20,8 +21,12 @@
                 <input type="password" name="password" placeholder="パスワードを入力してください。" th:field="*{password}">
                 <th:block th:each="error: ${#fields.errors('password')}">[[ ${error} ]]</th:block>
             </div>
+            <div class=input-field>
+                <input type="text" name="email" placeholder="メールアドレスを入力してください。" th:field="*{email}">
+                <th:block th:each="error: ${#fields.errors('email')}">[[ ${error} ]]</th:block>
+            </div>
             <div>
-                <input type="submit" value="ログイン">
+                <input type="submit" value="登録">
             </div>
         </form>
     </div>
